@@ -13,14 +13,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <!--
 === GOOGLE SHEETS (Apps Script) ===
-1. Buat Google Sheet dengan 2 tab: "RSVP" dan "Ucapan" (baris 1 = judul kolom bebas).
+1. Buat Google Sheet dengan 2 tab: "RSVP" dan "Ucapan". Baris 1 = judul: Waktu, Nama, Status, Jumlah, Ucapan, Kunci Link.
 2. Extensions > Apps Script, tempel kode ini, lalu Deploy > New deployment > Web app
    (Execute as: Me, Who has access: Anyone). Salin URL-nya ke CONFIG.sheetUrl di bawah.
 
 function doPost(e){
-  var d=JSON.parse(e.postData.contents), ss=SpreadsheetApp.getActive();
-  ss.getSheetByName(d.type=='rsvp'?'RSVP':'Ucapan')
-    .appendRow([new Date(),d.name,d.status||'',d.count||'',d.msg||'']);
+  var d=JSON.parse(e.postData.contents), lock=LockService.getScriptLock();
+  lock.waitLock(10000);
+  try{
+    var sh=SpreadsheetApp.getActive().getSheetByName(d.type=='rsvp'?'RSVP':'Ucapan');
+    var row=[new Date(),d.name,d.status||'',d.count||'',d.msg||'',d.key];
+    var v=sh.getDataRange().getValues(), idx=0;
+    for(var i=1;i<v.length;i++){ if(String(v[i][5])===String(d.key)){idx=i+1;break;} }
+    if(idx) sh.getRange(idx,1,1,6).setValues([row]); else sh.appendRow(row);
+  } finally { lock.releaseLock(); }
   return ContentService.createTextOutput('ok');
 }
 function doGet(){
@@ -163,7 +169,6 @@ footer small{opacity:.7;display:block;margin-top:18px}
  </div>
 </section></div>
 
-   
 <section id="cerita" class="rv">
  <h2>Kisah Cinta Kami</h2><p class="sub">Perjalanan dari Nganjuk ke Kediri</p>
  <div class="tl" id="story"></div>
@@ -263,7 +268,7 @@ const C={
  video:"",             /* ID video YouTube, mis. "dQw4w9WgXcQ" */
  music:"",             /* URL file mp3 */
  sheetUrl:"https://script.google.com/macros/s/AKfycbwSNTqNtP29IUPZCw6baUIRxsdoFIMcMwm858vLyHAPFApT5x68PVNpkVjzZTyXaCfW/exec",          /* URL Web App Apps Script */
- adminKey:"Roni",
+ adminKey:"ganti-kunci-ini",
  wa:"6281234567890",
  banks:[{n:"BCA",no:"1234567890",an:"Wencen Cius Roni Anggara"},{n:"DANA",no:"081234567890",an:"Apriliana Rizki Ananda"}],
  qris:"",              /* URL gambar QRIS */
@@ -336,8 +341,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-copy]");if
 
 /* ===== RSVP + ucapan -> Google Sheets ===== */
 const local=k=>JSON.parse(localStorage.getItem(k)||"[]");
+const guestKey=q.get("to")||"";
 async function send(d){
- if(!C.sheetUrl){const k=d.type==="rsvp"?"rsvp":"wishes";const a=local(k);a.push([new Date().toISOString(),d.name,d.status||"",d.count||"",d.msg||""]);localStorage.setItem(k,JSON.stringify(a));return}
+ d.key=guestKey||("nolink:"+d.name.toLowerCase());
+ if(!C.sheetUrl){const k=d.type==="rsvp"?"rsvp":"wishes";const a=local(k);const row=[new Date().toISOString(),d.name,d.status||"",d.count||"",d.msg||"",d.key];const i=a.findIndex(r=>r[5]===d.key);i>=0?a[i]=row:a.push(row);localStorage.setItem(k,JSON.stringify(a));return}
  await fetch(C.sheetUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)});
 }
 async function load(){
@@ -348,14 +355,20 @@ const closed=Date.now()>new Date(C.rsvpDeadline);
 if(closed){$("#fRsvp button").disabled=true;$("#rm").textContent="Konfirmasi kehadiran sudah ditutup.";$("#rm").className="msg er"}
 $("#fRsvp").onsubmit=async e=>{e.preventDefault();if(closed)return;const m=$("#rm");m.className="msg";m.textContent="Mengirim…";
  try{await send({type:"rsvp",name:clean($("#rn").value.trim()),status:$("#rs").value,count:+$("#rc").value});
-  m.className="msg ok";m.textContent="Terima kasih, konfirmasi Anda sudah kami terima.";refresh()}
+  m.className="msg ok";m.textContent="Terima kasih, konfirmasi Anda sudah kami terima. Pilihan bisa diubah kapan saja lewat link ini.";refresh()}
  catch{m.className="msg er";m.textContent="Gagal mengirim. Periksa koneksi lalu coba lagi."}};
 $("#fWish").onsubmit=async e=>{e.preventDefault();const m=$("#wmsg");m.className="msg";m.textContent="Mengirim…";
  try{await send({type:"wish",name:clean($("#wn").value.trim()),msg:clean($("#wm").value.trim())});
-  $("#wm").value="";m.className="msg ok";m.textContent="Ucapan terkirim. Terima kasih atas doanya.";setTimeout(refresh,1200)}
+  $("#wm").value="";m.className="msg ok";m.textContent="Ucapan terkirim. Terima kasih atas doanya. Anda bisa mengubahnya lewat link ini.";setTimeout(refresh,1200)}
  catch{m.className="msg er";m.textContent="Gagal mengirim. Periksa koneksi lalu coba lagi."}};
+function prefill(d){
+ if(window._pf||!guestKey)return;window._pf=1;
+ const r=(d.rsvp||[]).find(x=>String(x[5])===guestKey),w=(d.wishes||[]).find(x=>String(x[5])===guestKey);
+ if(r){$("#rs").value=r[2];$("#rc").value=r[3]||1}
+ if(w)$("#wm").value=w[4];
+}
 async function refresh(){
- try{const d=await load();const w=(d.wishes||[]).slice().reverse();
+ try{const d=await load();prefill(d);const w=(d.wishes||[]).slice().reverse();
   $("#ws").innerHTML=w.length?w.map(r=>`<div class="card"><b>${esc(r[1])}</b><br>${esc(r[4])}<br><small>${r[0]?fmt(r[0],{day:"numeric",month:"short",year:"numeric"}):""}</small></div>`).join(""):'<p class="sub">Belum ada ucapan. Jadilah yang pertama.</p>';
   window._d=d;adminRender(d)}
  catch{$("#ws").innerHTML='<p class="sub">Ucapan belum dapat dimuat.</p>'}
