@@ -13,27 +13,43 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <!--
 === GOOGLE SHEETS (Apps Script) ===
-1. Buat Google Sheet dengan 2 tab: "RSVP" dan "Ucapan". Baris 1 = judul: Waktu, Nama, Status, Jumlah, Ucapan, Kunci Link.
-2. Extensions > Apps Script, tempel kode ini, lalu Deploy > New deployment > Web app
-   (Execute as: Me, Who has access: Anyone). Salin URL-nya ke CONFIG.sheetUrl di bawah.
+1. Buat Google Sheet dengan 3 tab. Baris 1 = judul kolom:
+   RSVP dan Ucapan : Waktu, Nama, Status, Jumlah, Ucapan, Kunci Link
+   Tamu            : Waktu, Nama, Kunci Link, Kode
+2. Extensions > Apps Script, tempel kode ini. Isi ADMIN dengan nilai yang sama dengan C.adminKey di HTML.
+   Lalu Deploy > New deployment > Web app (Execute as: Me, Who has access: Anyone).
+   Salin URL-nya ke CONFIG.sheetUrl di bawah.
 
+var ADMIN='ganti-kunci-ini';
+function out(t){return ContentService.createTextOutput(t)}
 function doPost(e){
-  var d=JSON.parse(e.postData.contents), lock=LockService.getScriptLock();
+  var d=JSON.parse(e.postData.contents), ss=SpreadsheetApp.getActive(), lock=LockService.getScriptLock();
   lock.waitLock(10000);
   try{
-    var sh=SpreadsheetApp.getActive().getSheetByName(d.type=='rsvp'?'RSVP':'Ucapan');
+    var tamu=ss.getSheetByName('Tamu'), tv=tamu.getDataRange().getValues(), i;
+    if(d.type=='guest'){
+      if(d.adminKey!==ADMIN) return out('forbidden');
+      for(i=1;i<tv.length;i++){ if(String(tv[i][2])===String(d.key)) return out('exists'); }
+      tamu.appendRow([new Date(),d.name,d.key,d.code]);
+      return out('ok');
+    }
+    var valid=false;
+    for(i=1;i<tv.length;i++){ if(String(tv[i][2])===String(d.key)&&String(tv[i][3])===String(d.code)){valid=true;break;} }
+    if(!valid) return out('invalid');
+    var sh=ss.getSheetByName(d.type=='rsvp'?'RSVP':'Ucapan');
     var row=[new Date(),d.name,d.status||'',d.count||'',d.msg||'',d.key];
     var v=sh.getDataRange().getValues(), idx=0;
-    for(var i=1;i<v.length;i++){ if(String(v[i][5])===String(d.key)){idx=i+1;break;} }
+    for(i=1;i<v.length;i++){ if(String(v[i][5])===String(d.key)){idx=i+1;break;} }
     if(idx) sh.getRange(idx,1,1,6).setValues([row]); else sh.appendRow(row);
+    return out('ok');
   } finally { lock.releaseLock(); }
-  return ContentService.createTextOutput('ok');
 }
-function doGet(){
+function doGet(e){
   var ss=SpreadsheetApp.getActive();
   function r(n){return ss.getSheetByName(n).getDataRange().getValues().slice(1)}
-  return ContentService.createTextOutput(JSON.stringify({rsvp:r('RSVP'),wishes:r('Ucapan')}))
-    .setMimeType(ContentService.MimeType.JSON);
+  var o={rsvp:r('RSVP'),wishes:r('Ucapan')};
+  if(e&&e.parameter&&e.parameter.admin===ADMIN) o.tamu=r('Tamu');
+  return out(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
 -->
 <style>
@@ -267,7 +283,7 @@ const C={
  ],
  photos:[],            /* isi URL foto, mis. ["foto1.jpg","foto2.jpg",...] */
  video:"",             /* ID video YouTube, mis. "dQw4w9WgXcQ" */
- music:"https://www.youtube.com/watch?v=Gvn8-id8U0o&list=RDGvn8-id8U0o&start_radio=1",             /* URL file mp3 */
+ music:"",             /* URL file mp3 */
  sheetUrl:"https://script.google.com/macros/s/AKfycbwSNTqNtP29IUPZCw6baUIRxsdoFIMcMwm858vLyHAPFApT5x68PVNpkVjzZTyXaCfW/exec",          /* URL Web App Apps Script */
  adminKey:"Roni",
  wa:"6281234567890",
@@ -291,6 +307,7 @@ const q=new URLSearchParams(location.search);
 const guest=(q.get("to")||"Tamu Undangan").replace(/[-_+]/g," ");
 $("#guest").textContent=guest;$("#rn").value=q.get("to")?guest:"";$("#wn").value=q.get("to")?guest:"";
 if(q.get("to")){["#rn","#wn"].forEach(i=>{$(i).readOnly=true;$(i).title="Nama sesuai undangan dan tidak dapat diubah"})}
+if(C.sheetUrl&&(!q.get("to")||!q.get("k"))){$$("#fRsvp button,#fWish button").forEach(b=>b.disabled=true);["#rm","#wmsg"].forEach(i=>{$(i).className="msg er";$(i).textContent="Gunakan link undangan pribadi dari panitia untuk mengisi form ini."})}
 $("#coverDate").textContent=fmt(C.events[0].start,full);
 [["g",C.groom],["b",C.bride]].forEach(([k,p])=>{
  $("#"+k+"Name").textContent=p.full;$("#"+k+"Par").textContent=p.par;$("#"+k+"Addr").textContent=p.addr;
@@ -343,11 +360,16 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-copy]");if
 
 /* ===== RSVP + ucapan -> Google Sheets ===== */
 const local=k=>JSON.parse(localStorage.getItem(k)||"[]");
-const guestKey=q.get("to")||"";
+const guestKey=q.get("to")||"",guestCode=q.get("k")||"";
 async function send(d){
- d.key=guestKey||("nolink:"+d.name.toLowerCase());
+ d.key=guestKey||("nolink:"+d.name.toLowerCase());d.code=guestCode;
  if(!C.sheetUrl){const k=d.type==="rsvp"?"rsvp":"wishes";const a=local(k);const row=[new Date().toISOString(),d.name,d.status||"",d.count||"",d.msg||"",d.key];const i=a.findIndex(r=>r[5]===d.key);i>=0?a[i]=row:a.push(row);localStorage.setItem(k,JSON.stringify(a));return}
- await fetch(C.sheetUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)});
+ await post(d);
+}
+async function post(d){
+ const o={method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)};
+ try{const r=await fetch(C.sheetUrl,o);const t=(await r.text()).trim();if(t==="invalid"||t==="forbidden")throw new Error(t);return t}
+ catch(e){if(e.message==="invalid"||e.message==="forbidden")throw e;await fetch(C.sheetUrl,{...o,mode:"no-cors"})}
 }
 async function load(){
  if(!C.sheetUrl)return{rsvp:local("rsvp"),wishes:local("wishes")};
@@ -358,11 +380,11 @@ if(closed){$("#fRsvp button").disabled=true;$("#rm").textContent="Konfirmasi keh
 $("#fRsvp").onsubmit=async e=>{e.preventDefault();if(closed)return;const m=$("#rm");m.className="msg";m.textContent="Mengirim…";
  try{await send({type:"rsvp",name:q.get("to")?guest:clean($("#rn").value.trim()),status:$("#rs").value,count:+$("#rc").value});
   m.className="msg ok";m.textContent="Terima kasih, konfirmasi Anda sudah kami terima. Pilihan bisa diubah kapan saja lewat link ini.";refresh()}
- catch{m.className="msg er";m.textContent="Gagal mengirim. Periksa koneksi lalu coba lagi."}};
+ catch(err){m.className="msg er";m.textContent=err.message==="invalid"?"Kode link tidak cocok. Gunakan link asli dari panitia.":"Gagal mengirim. Periksa koneksi lalu coba lagi."}};
 $("#fWish").onsubmit=async e=>{e.preventDefault();const m=$("#wmsg");m.className="msg";m.textContent="Mengirim…";
  try{await send({type:"wish",name:q.get("to")?guest:clean($("#wn").value.trim()),msg:clean($("#wm").value.trim())});
   $("#wm").value="";m.className="msg ok";m.textContent="Ucapan terkirim. Terima kasih atas doanya. Anda bisa mengubahnya lewat link ini.";setTimeout(refresh,1200)}
- catch{m.className="msg er";m.textContent="Gagal mengirim. Periksa koneksi lalu coba lagi."}};
+ catch(err){m.className="msg er";m.textContent=err.message==="invalid"?"Kode link tidak cocok. Gunakan link asli dari panitia.":"Gagal mengirim. Periksa koneksi lalu coba lagi."}};
 function prefill(d){
  if(window._pf||!guestKey)return;window._pf=1;
  const r=(d.rsvp||[]).find(x=>String(x[5])===guestKey),w=(d.wishes||[]).find(x=>String(x[5])===guestKey);
@@ -384,11 +406,23 @@ function adminRender(d){if(!isAdmin)return;const r=d.rsvp||[];
  const sum=s=>r.filter(x=>x[2]===s).reduce((a,x)=>a+(+x[3]||1),0);
  $("#stat").innerHTML=`Respons: <b>${r.length}</b> · Hadir: <b>${sum("Hadir")}</b> orang · Tidak hadir: <b>${r.filter(x=>x[2]==="Tidak hadir").length}</b> · Ragu: <b>${r.filter(x=>x[2]==="Masih ragu").length}</b> · Ucapan: <b>${(d.wishes||[]).length}</b>`;
  $("#rsvpList").innerHTML=r.map(x=>`${esc(x[1])} — ${esc(x[2])} (${esc(x[3])})`).join("<br>")}
-$("#gen").onclick=()=>{const base=location.origin+location.pathname;
- $("#links").innerHTML=$("#names").value.split("\n").map(n=>n.trim()).filter(Boolean).map(n=>{
-  const u=base+"?to="+encodeURIComponent(n.replace(/\s+/g,"-"));
-  const t=`Assalamu'alaikum ${n}, kami mengundang Anda ke pernikahan Wencen & Apriliana. Buka undangan: ${u}`;
-  return `<p style="margin:8px 0"><b>${esc(n)}</b><br><a href="${esc(u)}">${esc(u)}</a><br><a href="https://wa.me/?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">Kirim via WhatsApp</a></p>`}).join("")};
+const rand=()=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return[...crypto.getRandomValues(new Uint8Array(8))].map(x=>a[x%a.length]).join("")};
+async function tamuMap(){const r=await fetch(C.sheetUrl+"?admin="+encodeURIComponent(C.adminKey));const d=await r.json();if(!d.tamu)throw new Error("noadmin");const m={};d.tamu.forEach(x=>m[x[2]]=String(x[3]));return m}
+$("#gen").onclick=async()=>{
+ const base=location.origin+location.pathname,box=$("#links");
+ const names=$("#names").value.split("\n").map(n=>n.trim()).filter(Boolean);
+ if(!names.length)return;box.textContent="Membuat link…";
+ let known={};
+ if(C.sheetUrl){try{known=await tamuMap()}catch{box.innerHTML='<b style="color:#c00">Gagal membaca data tamu. Periksa sheetUrl, tab "Tamu", dan ADMIN di Apps Script, lalu deploy versi baru.</b>';return}}
+ const seen=new Set(),codes={};
+ const items=names.map(n=>{const to=n.replace(/\s+/g,"-");const dup=!!known[to]||seen.has(to);
+  const code=known[to]||codes[to]||(codes[to]=rand());const isNew=!dup;seen.add(to);return{n,to,code,isNew,dup}});
+ if(C.sheetUrl){for(const it of items.filter(x=>x.isNew)){try{await post({type:"guest",adminKey:C.adminKey,name:it.n,key:it.to,code:it.code})}catch{}}
+  try{const chk=await tamuMap();items.forEach(it=>it.ok=chk[it.to]===it.code)}catch{}}
+ box.innerHTML=items.map(it=>{
+  const u=base+"?to="+encodeURIComponent(it.to)+"&k="+it.code;
+  const t=`Assalamu'alaikum ${it.n}, kami mengundang Anda ke pernikahan Wencen & Apriliana. Buka undangan: ${u}`;
+  return `<p style="margin:8px 0"><b>${esc(it.n)}</b> ${C.sheetUrl?(it.ok?"✓ tersimpan":"⚠ belum tersimpan di Sheet, coba lagi"):""}${it.dup?'<br><b style="color:#c00">⚠ Nama sudah digunakan</b>':""}<br><a href="${esc(u)}">${esc(u)}</a><br><a href="https://wa.me/?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">Kirim via WhatsApp</a></p>`}).join("")};
 </script>
 </body>
 </html>
