@@ -103,6 +103,7 @@ form{text-align:left;display:grid;gap:12px}
 label{font-weight:700;font-size:14px}
 input,select,textarea{width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--aqua);font:inherit;background:var(--card);color:var(--tx)}
 textarea{min-height:90px;resize:vertical}
+input[readonly]{background:var(--sky);opacity:.85;cursor:not-allowed}
 .msg{margin-top:10px;font-weight:700}
 .ok{color:#0F9D6B}.er{color:#D6455D}
 .ws{max-height:380px;overflow:auto;text-align:left;display:grid;gap:10px;margin-top:20px}
@@ -289,6 +290,7 @@ const q=new URLSearchParams(location.search);
 /* ===== isi konten ===== */
 const guest=(q.get("to")||"Tamu Undangan").replace(/[-_+]/g," ");
 $("#guest").textContent=guest;$("#rn").value=q.get("to")?guest:"";$("#wn").value=q.get("to")?guest:"";
+if(q.get("to")){["#rn","#wn"].forEach(i=>{$(i).readOnly=true;$(i).title="Nama sesuai undangan dan tidak dapat diubah"})}
 $("#coverDate").textContent=fmt(C.events[0].start,full);
 [["g",C.groom],["b",C.bride]].forEach(([k,p])=>{
  $("#"+k+"Name").textContent=p.full;$("#"+k+"Par").textContent=p.par;$("#"+k+"Addr").textContent=p.addr;
@@ -354,11 +356,11 @@ async function load(){
 const closed=Date.now()>new Date(C.rsvpDeadline);
 if(closed){$("#fRsvp button").disabled=true;$("#rm").textContent="Konfirmasi kehadiran sudah ditutup.";$("#rm").className="msg er"}
 $("#fRsvp").onsubmit=async e=>{e.preventDefault();if(closed)return;const m=$("#rm");m.className="msg";m.textContent="Mengirim…";
- try{await send({type:"rsvp",name:clean($("#rn").value.trim()),status:$("#rs").value,count:+$("#rc").value});
+ try{await send({type:"rsvp",name:q.get("to")?guest:clean($("#rn").value.trim()),status:$("#rs").value,count:+$("#rc").value});
   m.className="msg ok";m.textContent="Terima kasih, konfirmasi Anda sudah kami terima. Pilihan bisa diubah kapan saja lewat link ini.";refresh()}
  catch{m.className="msg er";m.textContent="Gagal mengirim. Periksa koneksi lalu coba lagi."}};
 $("#fWish").onsubmit=async e=>{e.preventDefault();const m=$("#wmsg");m.className="msg";m.textContent="Mengirim…";
- try{await send({type:"wish",name:clean($("#wn").value.trim()),msg:clean($("#wm").value.trim())});
+ try{await send({type:"wish",name:q.get("to")?guest:clean($("#wn").value.trim()),msg:clean($("#wm").value.trim())});
   $("#wm").value="";m.className="msg ok";m.textContent="Ucapan terkirim. Terima kasih atas doanya. Anda bisa mengubahnya lewat link ini.";setTimeout(refresh,1200)}
  catch{m.className="msg er";m.textContent="Gagal mengirim. Periksa koneksi lalu coba lagi."}};
 function prefill(d){
