@@ -91,9 +91,9 @@ section h2{font-size:clamp(28px,6vw,40px);margin-bottom:8px;color:var(--lagoon)}
 .btn.sm{padding:7px 16px;font-size:13px}
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 /* cover */
-#cover{position:fixed;inset:0;z-index:50;display:flex;overflow-y:auto;text-align:center;padding:24px;color:#fff;background:linear-gradient(170deg,#0A0A0A 0%,#1C1C1C 55%,#3B3B3B 100%);transition:transform .9s cubic-bezier(.7,0,.2,1)}
+#cover{position:fixed;inset:0;z-index:50;display:flex;overflow-x:hidden;overflow-y:auto;text-align:center;padding:24px;color:#fff;background:linear-gradient(170deg,#0A0A0A 0%,#1C1C1C 55%,#3B3B3B 100%);transition:transform .9s cubic-bezier(.7,0,.2,1)}
 #cover.out{transform:translateY(-101%)}
-#cover::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:var(--sun);top:9%;right:-70px;opacity:.22}
+#cover::before{content:"";position:absolute;width:clamp(130px,32vw,260px);aspect-ratio:1;border-radius:50%;background:var(--sun);top:6%;right:5%;opacity:.22}
 #cover::after{content:"";position:absolute;left:0;right:0;bottom:0;height:150px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70c150-60 300 60 450 0s300 60 450 0 200-30 300 10v70H0z' fill='%23FBF6E9' fill-opacity='.35'/%3E%3Cpath d='M0 100c150-50 300 50 450 0s300 50 450 0 200-20 300 10v40H0z' fill='%23FBF6E9'/%3E%3C/svg%3E") bottom/100% 100% no-repeat}
 #cover>div{position:relative;z-index:1;margin:auto}
 #cover small{opacity:.9}
@@ -227,6 +227,7 @@ img,iframe{max-width:100%}
 #editor{max-height:460px;overflow:auto}
 .er-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:center;padding:12px;border:1px solid #e0d6b5;border-radius:12px;margin:8px 0;background:#fff}
 .er-row small{grid-column:1/-1;word-break:break-all}
+.er-row[hidden]{display:none}
 footer{padding:48px 20px 80px;text-align:center;background:var(--deep);color:#E8DDBF}
 footer h2{color:var(--sun);font-size:34px}
 footer small{opacity:.7;display:block;margin-top:18px}
@@ -245,6 +246,7 @@ footer small{opacity:.7;display:block;margin-top:18px}
  <p id="stat">Memuat data…</p>
  <h3 style="font-size:17px;margin-top:14px">Edit database</h3>
  <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" type="button" data-tab="rsvp">RSVP</button><button class="btn out sm" type="button" data-tab="wish">Ucapan</button><button class="btn out sm" type="button" data-tab="tamu">Tamu</button></div>
+ <input id="admSearch" type="search" placeholder="Cari nama, link, status, atau ucapan…" aria-label="Cari data" style="margin-bottom:4px"><small id="admCount"></small>
  <p id="admMsg" class="msg"></p>
  <div id="editor"></div>
  <h3 style="font-size:17px">Generator link tamu</h3>
@@ -375,9 +377,9 @@ const C={
   ["Lamaran","Ceritakan momen lamaran di sini."],
   ["Menuju Pernikahan","Dua keluarga bersatu, kami siap melangkah bersama."]
  ],
- photos:[],            /* isi URL foto, mis. ["foto1.jpg","foto2.jpg",...] */
+ photos:[pngtree-couple-anime-a-man-giving-an-engagement-box-diamond-ring-marriage-png-image_13759674.png],            /* isi URL foto, mis. ["foto1.jpg","foto2.jpg",...] */
  video:"",             /* ID video YouTube, mis. "dQw4w9WgXcQ" */
- coverPhoto:"https://id.pngtree.com/freepng/muslim-wedding-couple-romance-and-love-just-married-romantic-cartoon_16481710.html",        /* URL foto berdua untuk sampul 3D (kosong = dua lingkaran W & A) */
+ coverPhoto:"https://png.pngtree.com/png-vector/20240906/ourmid/pngtree-couple-anime-a-man-giving-an-engagement-box-diamond-ring-marriage-png-image_13759674.png",        /* URL foto berdua untuk sampul 3D (kosong = dua lingkaran W & A) */
  music:"",             /* URL file mp3 */
  musicYT:"https://www.youtube.com/watch?v=DKC4vtUAlaA&list=RDo1gSJKCmJH8&index=2",           /* link YouTube / YouTube Music, mis. "https://music.youtube.com/watch?v=XXXXXXXXXXX" */
  sheetUrl:"https://script.google.com/macros/s/AKfycbzuHYq_mr3OtQRgG9on5cry6UAVqjDeZXz88VPjgMsuIRDQtL1AbbAUxG2FZYZKNBy6/exec",          /* URL Web App Apps Script */
@@ -524,14 +526,19 @@ let admTab="rsvp";
 function admEditor(d){
  const box=$("#editor"),kc=admTab==="tamu"?2:5,base=location.origin+location.pathname;
  if(!C.sheetUrl){box.innerHTML="<p>Isi sheetUrl di CONFIG agar database bisa diedit.</p>";return}
- const T={rsvp:d.rsvp,wish:d.wishes,tamu:d.tamu}[admTab]||[];
+ const T={rsvp:d.rsvp,wish:d.wishes,tamu:d.tamu}[admTab]||[],cm={};(d.tamu||[]).forEach(x=>cm[nk(x[2])]=String(x[3]));
  box.innerHTML=T.length?T.map(r=>{
-  const key=String(r[kc]||""),dis=key?"":" disabled";let f="",info="Link: "+esc(key||"(tanpa kunci link, edit langsung di Sheet)");
+  const key=String(r[kc]||""),dis=key?"":" disabled";let f="";const code=cm[nk(key)],u=key&&code?base+"?to="+encodeURIComponent(key)+"&k="+encodeURIComponent(code):"",info=u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:"(link tidak ditemukan, edit langsung di Sheet)";
   if(admTab==="rsvp")f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><select data-f="status">${["Hadir","Tidak hadir","Masih ragu"].map(o=>`<option${o===r[2]?" selected":""}>${o}</option>`).join("")}</select><input data-f="count" type="number" min="1" max="10" value="${esc(r[3]||1)}" aria-label="Jumlah">`;
   else if(admTab==="wish")f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><textarea data-f="msg" aria-label="Ucapan">${esc(r[4])}</textarea>`;
-  else{f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><input data-f="code" value="${esc(r[3])}" maxlength="12" aria-label="Kode">`;const u=base+"?to="+encodeURIComponent(key)+"&k="+encodeURIComponent(r[3]);info=`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`}
-  return `<div class="er-row" data-key="${esc(key)}"><small>${info}</small>${f}<span><button class="btn sm" data-a="save" type="button"${dis}>Simpan</button> <button class="btn out sm" data-a="del" type="button"${dis}>Hapus</button></span></div>`}).join(""):"<p>Belum ada data.</p>";
+  else{f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><input data-f="code" value="${esc(r[3])}" maxlength="12" aria-label="Kode">`}
+  return `<div class="er-row" data-key="${esc(key)}" data-s="${esc([r[1],admTab==="tamu"?"":r[2],admTab==="wish"?r[4]:"",key,u].join(" ").toLowerCase())}"><small>${info}</small>${f}<span><button class="btn sm" data-a="save" type="button"${dis}>Simpan</button> <button class="btn out sm" data-a="del" type="button"${dis}>Hapus</button></span></div>`}).join(""):"<p>Belum ada data.</p>";
+ applyFilter();
 }
+function applyFilter(){const k=nk($("#admSearch").value.trim());let n=0,t=0;
+ $$("#editor .er-row").forEach(r=>{t++;const m=!k||r.dataset.s.includes(k);r.hidden=!m;if(m)n++});
+ $("#admCount").textContent=k?`Menampilkan ${n} dari ${t} data`:""}
+$("#admSearch").oninput=applyFilter;
 $$("[data-tab]").forEach(b=>b.onclick=()=>{admTab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.className="btn sm"+(x===b?"":" out"));if(window._d)admEditor(window._d)});
 $("#editor").onclick=async e=>{
  const b=e.target.closest("[data-a]");if(!b)return;
