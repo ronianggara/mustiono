@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Undangan Pernikahan Wencen & Apriliana</title>
 <meta name="description" content="Kami mengundang Anda di hari bahagia Wencen & Apriliana.">
 <meta property="og:title" content="Undangan Pernikahan Wencen & Apriliana">
@@ -22,6 +22,7 @@
 
 var ADMIN='ganti-kunci-ini';
 function out(t){return ContentService.createTextOutput(t)}
+function nk(s){return String(s).toLowerCase()}
 function doPost(e){
   var d=JSON.parse(e.postData.contents), ss=SpreadsheetApp.getActive(), lock=LockService.getScriptLock();
   lock.waitLock(10000);
@@ -29,17 +30,30 @@ function doPost(e){
     var tamu=ss.getSheetByName('Tamu'), tv=tamu.getDataRange().getValues(), i;
     if(d.type=='guest'){
       if(d.adminKey!==ADMIN) return out('forbidden');
-      for(i=1;i<tv.length;i++){ if(String(tv[i][2])===String(d.key)) return out('exists'); }
+      for(i=1;i<tv.length;i++){ if(nk(tv[i][2])===nk(d.key)) return out('exists'); }
       tamu.appendRow([new Date(),d.name,d.key,d.code]);
       return out('ok');
     }
+    if(d.type=='admin'){
+      if(d.adminKey!==ADMIN) return out('forbidden');
+      var s0=ss.getSheetByName({rsvp:'RSVP',wish:'Ucapan',tamu:'Tamu'}[d.sheet]), kc=d.sheet=='tamu'?2:5;
+      var v0=s0.getDataRange().getValues(), r=0;
+      for(i=1;i<v0.length;i++){ if(nk(v0[i][kc])===nk(d.key)){r=i+1;break;} }
+      if(!r) return out('notfound');
+      if(d.action=='delete'){ s0.deleteRow(r); return out('ok'); }
+      s0.getRange(r,2).setValue(d.name);
+      if(d.sheet=='rsvp') s0.getRange(r,3,1,2).setValues([[d.status,d.count]]);
+      if(d.sheet=='wish') s0.getRange(r,5).setValue(d.msg);
+      if(d.sheet=='tamu'&&d.code) s0.getRange(r,4).setValue(d.code);
+      return out('ok');
+    }
     var valid=false;
-    for(i=1;i<tv.length;i++){ if(String(tv[i][2])===String(d.key)&&String(tv[i][3])===String(d.code)){valid=true;break;} }
+    for(i=1;i<tv.length;i++){ if(nk(tv[i][2])===nk(d.key)&&String(tv[i][3])===String(d.code)){valid=true;break;} }
     if(!valid) return out('invalid');
     var sh=ss.getSheetByName(d.type=='rsvp'?'RSVP':'Ucapan');
     var row=[new Date(),d.name,d.status||'',d.count||'',d.msg||'',d.key];
     var v=sh.getDataRange().getValues(), idx=0;
-    for(i=1;i<v.length;i++){ if(String(v[i][5])===String(d.key)){idx=i+1;break;} }
+    for(i=1;i<v.length;i++){ if(nk(v[i][5])===nk(d.key)){idx=i+1;break;} }
     if(idx) sh.getRange(idx,1,1,6).setValues([row]); else sh.appendRow(row);
     return out('ok');
   } finally { lock.releaseLock(); }
@@ -57,15 +71,15 @@ function doGet(e){
 :root[data-theme=dark]{--bg:#0F0F0F;--card:#1E1E1E;--tx:#F3EAD2;--mut:#B5AD98;--sky:#181818}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth}
-body{font:400 16px/1.7 Nunito,system-ui,sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
+body{font:400 1rem/1.7 Nunito,system-ui,sans-serif;background:var(--bg);color:var(--tx);overflow-x:hidden}
 body.lock{overflow:hidden}
 h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;line-height:1.15}
-section{padding:72px 20px;max-width:760px;margin:auto;text-align:center}
+section{padding:clamp(52px,9vw,96px) clamp(16px,4vw,32px);max-width:var(--mw);margin:auto;text-align:center}
 section h2{font-size:clamp(28px,6vw,40px);margin-bottom:8px;color:var(--lagoon)}
 :root[data-theme=dark] section h2{color:var(--aqua)}
 .sub{color:var(--mut);margin-bottom:28px}
 .band{background:var(--sky);max-width:none}
-.band>.in{max-width:760px;margin:auto}
+.band>.in{max-width:var(--mw);margin:auto}
 .card{background:var(--card);border-radius:22px;padding:24px;box-shadow:0 8px 24px rgba(20,20,20,.12)}
 .grid{display:grid;gap:16px}
 .g2{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
@@ -77,13 +91,13 @@ section h2{font-size:clamp(28px,6vw,40px);margin-bottom:8px;color:var(--lagoon)}
 .btn.sm{padding:7px 16px;font-size:13px}
 :focus-visible{outline:3px solid var(--sun);outline-offset:2px}
 /* cover */
-#cover{position:fixed;inset:0;z-index:50;display:grid;place-items:center;text-align:center;padding:24px;color:#fff;background:linear-gradient(170deg,#0A0A0A 0%,#1C1C1C 55%,#3B3B3B 100%);transition:transform .9s cubic-bezier(.7,0,.2,1)}
+#cover{position:fixed;inset:0;z-index:50;display:flex;overflow-y:auto;text-align:center;padding:24px;color:#fff;background:linear-gradient(170deg,#0A0A0A 0%,#1C1C1C 55%,#3B3B3B 100%);transition:transform .9s cubic-bezier(.7,0,.2,1)}
 #cover.out{transform:translateY(-101%)}
-#cover::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:var(--sun);top:9%;right:-70px;opacity:.95}
+#cover::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;background:var(--sun);top:9%;right:-70px;opacity:.22}
 #cover::after{content:"";position:absolute;left:0;right:0;bottom:0;height:150px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70c150-60 300 60 450 0s300 60 450 0 200-30 300 10v70H0z' fill='%23FBF6E9' fill-opacity='.35'/%3E%3Cpath d='M0 100c150-50 300 50 450 0s300 50 450 0 200-20 300 10v40H0z' fill='%23FBF6E9'/%3E%3C/svg%3E") bottom/100% 100% no-repeat}
-#cover>div{position:relative;z-index:1}
+#cover>div{position:relative;z-index:1;margin:auto}
 #cover small{opacity:.9}
-#cover h1{font-size:clamp(46px,13vw,86px);margin:10px 0}
+#cover h1{font-size:clamp(38px,11vw,72px);margin:6px 0}
 #cover h1 i{display:block;font-size:.45em;font-style:normal;color:var(--sun)}
 .tamu{margin:22px auto;padding:14px 22px;border-radius:18px;background:rgba(255,255,255,.16);display:inline-block}
 .tamu b{display:block;font:700 22px 'Cormorant Garamond',serif}
@@ -105,11 +119,24 @@ section h2{font-size:clamp(28px,6vw,40px);margin-bottom:8px;color:var(--lagoon)}
 .tl>div::before{content:"";position:absolute;left:-33px;top:6px;width:16px;height:16px;border-radius:50%;background:var(--sun);border:3px solid var(--bg)}
 .tl h3{font-size:19px}
 /* gallery */
-.gal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;overflow:hidden;border-radius:18px}
-.gal button{aspect-ratio:1;width:100%;min-width:0;border:0;border-radius:16px;cursor:zoom-in;font-size:34px;background-size:cover;background-position:center}
+.gal{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(6,minmax(0,1fr));aspect-ratio:4/6;gap:8px;width:100%}
+.gal button:nth-child(1){grid-area:1/1/span 2/span 2}
+.gal button:nth-child(2){grid-area:1/3}
+.gal button:nth-child(3){grid-area:1/4/span 2}
+.gal button:nth-child(4){grid-area:2/3}
+.gal button:nth-child(5){grid-area:3/1/span 2}
+.gal button:nth-child(6){grid-area:3/2/span 2/span 2}
+.gal button:nth-child(7){grid-area:3/4}
+.gal button:nth-child(8){grid-area:4/4}
+.gal button:nth-child(9){grid-area:5/1/span 2}
+.gal button:nth-child(10){grid-area:5/2}
+.gal button:nth-child(11){grid-area:5/3/span 2/span 2}
+.gal button:nth-child(12){grid-area:6/2}
+.gal button{height:100%;width:100%;min-width:0;border:0;border-radius:16px;cursor:zoom-in;font-size:34px;background-size:cover;background-position:center}
 .gal button:nth-child(2n){background-color:var(--aqua)}
 .gal button:nth-child(3n){background-color:var(--sun)}
 .gal button:nth-child(3n+1){background-color:var(--coral)}
+.gal button:nth-child(5),.gal button:nth-child(11){background-color:var(--coral)}
 .vid{aspect-ratio:16/9;width:100%;border:0;border-radius:20px;margin-top:20px}
 #lb{position:fixed;inset:0;z-index:80;background:rgba(10,10,10,.9);display:none;place-items:center;padding:20px}
 #lb.on{display:grid}
@@ -135,8 +162,71 @@ body.open .fab{display:block}
 #mus{bottom:16px}#thm{bottom:70px;background:var(--sun);color:var(--deep)}
 #mus.spin{animation:sp 4s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-.rv{opacity:0;transform:translateY(18px);transition:.7s}
-.rv.on{opacity:1;transform:none}
+.rv>*{opacity:0;transform:translateY(26px) scale(.97);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.8,.2,1)}
+.rv.on>*{opacity:1;transform:none}
+.rv .g2>*{opacity:0;transform:translateX(-50px);transition:opacity .8s .3s,transform .8s .3s cubic-bezier(.2,.8,.2,1)}
+.rv .g2>*:nth-child(2n){transform:translateX(50px)}
+.rv.on .g2>*{opacity:1;transform:none}
+.tl>div{opacity:0;transform:translateX(-30px);transition:.7s}
+.rv.on .tl>div{opacity:1;transform:none}
+.cd div{opacity:0;transform:rotateX(90deg);transition:.7s .3s}
+.rv.on .cd div{opacity:1;transform:none}
+.gal button{opacity:0;transform:scale(.6);transition:.6s}
+.rv.on .gal button{opacity:1;transform:none}
+/* pemisah gelombang */
+:root{--w:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 70' preserveAspectRatio='none'%3E%3Cpath d='M0 0H1200V35Q1050 70 900 35T600 35T300 35T0 35Z'/%3E%3C/svg%3E")}
+.band{position:relative}
+.band::before,.band::after,footer::before{content:"";position:absolute;left:0;right:0;height:60px;background:var(--bg);pointer-events:none;-webkit-mask:var(--w) center/100% 100% no-repeat;mask:var(--w) center/100% 100% no-repeat}
+.band::before{top:-1px}
+.band::after{bottom:-1px;transform:scaleY(-1)}
+.band.nb::after{display:none}
+.band>.in{padding-top:clamp(80px,12vw,130px);padding-bottom:clamp(80px,12vw,130px)}
+footer{position:relative}
+footer::before{top:-59px;background:var(--deep);transform:scaleY(-1)}
+/* cover 3D */
+.stage{perspective:900px;width:clamp(140px,26vh,230px);height:clamp(140px,26vh,230px);margin:20px auto 14px}
+.tilt{width:100%;height:100%;transform-style:preserve-3d;transition:transform .25s;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
+.c3{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:fl 8s ease-in-out infinite}
+@keyframes fl{0%,100%{transform:rotateY(-24deg) rotateX(6deg)}50%{transform:rotateY(24deg) rotateX(-6deg)}}
+.ph{position:absolute;border-radius:50%;background:#fff center/cover;display:grid;place-items:center;font:700 54px 'Cormorant Garamond',serif;color:var(--deep);border:4px solid var(--sun);box-shadow:0 16px 30px rgba(0,0,0,.45)}
+.ph.main{inset:8%;transform:translateZ(60px)}
+.ph.a{width:62%;height:62%;left:0;top:10%;transform:translateZ(70px);background-image:linear-gradient(140deg,var(--lagoon),var(--aqua));color:#fff}
+.ph.b{width:62%;height:62%;right:0;top:28%;transform:translateZ(20px);background-image:linear-gradient(140deg,var(--coral),var(--sun))}
+.ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--sun)}
+.ring.r2{transform:translateZ(-50px) scale(1.3);border-color:rgba(255,255,255,.45)}
+.ring.r1{transform:translateZ(0) scale(1.1)}
+.fab[hidden]{display:none!important}
+:root{--mw:760px}
+html{font-size:clamp(15px,.35vw + 14px,18px);-webkit-text-size-adjust:100%}
+img,iframe{max-width:100%}
+.fab{right:max(14px,env(safe-area-inset-right))}
+#mus{bottom:calc(16px + env(safe-area-inset-bottom))}#thm{bottom:calc(70px + env(safe-area-inset-bottom))}
+.ws{max-height:min(380px,60vh)}
+#cover h1{font-size:clamp(36px,min(11vw,9vh),84px)}
+@media(min-width:1024px){:root{--mw:960px}}
+@media(min-width:1440px){:root{--mw:1100px}}
+@media(min-width:900px){
+ .gal{grid-template-columns:repeat(6,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));aspect-ratio:3/2}
+ .gal button:nth-child(1){grid-area:1/1/span 2/span 2}
+ .gal button:nth-child(2){grid-area:1/3/span 1/span 2}
+ .gal button:nth-child(3){grid-area:2/3}
+ .gal button:nth-child(4){grid-area:2/4}
+ .gal button:nth-child(5){grid-area:1/5/span 2/span 2}
+ .gal button:nth-child(6){grid-area:3/1/span 2}
+ .gal button:nth-child(7){grid-area:3/2/span 2/span 2}
+ .gal button:nth-child(8){grid-area:3/4}
+ .gal button:nth-child(9){grid-area:4/4}
+ .gal button:nth-child(10){grid-area:3/5}
+ .gal button:nth-child(11){grid-area:3/6/span 2}
+ .gal button:nth-child(12){grid-area:4/5}
+ .stage{width:clamp(160px,28vh,280px);height:clamp(160px,28vh,280px)}
+}
+@media(max-width:380px){.cd{gap:6px}.cd div{min-width:58px}.foto{width:140px;height:140px}.btn{padding:11px 20px}}
+@media(max-height:560px){#cover{padding:14px}.stage{width:100px;height:100px;margin:8px auto}.tamu{margin:8px auto;padding:8px 14px}#cover::before{display:none}#cover::after{height:70px}#cover h1{font-size:34px}}
+#adm input,#adm select,#adm textarea{border-color:#bbb;color:#333;background:#fff;padding:8px;font-size:14px}
+#editor{max-height:460px;overflow:auto}
+.er-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:center;padding:12px;border:1px solid #e0d6b5;border-radius:12px;margin:8px 0;background:#fff}
+.er-row small{grid-column:1/-1;word-break:break-all}
 footer{padding:48px 20px 80px;text-align:center;background:var(--deep);color:#E8DDBF}
 footer h2{color:var(--sun);font-size:34px}
 footer small{opacity:.7;display:block;margin-top:18px}
@@ -144,7 +234,7 @@ footer small{opacity:.7;display:block;margin-top:18px}
 #adm.on{display:block}
 #adm textarea{border-color:#bbb;color:#333;background:#fff}
 #adm a{color:#9A7420;word-break:break-all}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}html{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv>*,.rv .g2>*,.tl>div,.cd div,.gal button{opacity:1!important;transform:none!important}html{scroll-behavior:auto}}
 </style>
 </head>
 <body class="lock">
@@ -153,7 +243,10 @@ footer small{opacity:.7;display:block;margin-top:18px}
 <div id="adm">
  <h3>Dashboard Admin</h3>
  <p id="stat">Memuat data…</p>
- <div id="rsvpList" style="max-height:220px;overflow:auto;margin:10px 0;font-size:14px"></div>
+ <h3 style="font-size:17px;margin-top:14px">Edit database</h3>
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" type="button" data-tab="rsvp">RSVP</button><button class="btn out sm" type="button" data-tab="wish">Ucapan</button><button class="btn out sm" type="button" data-tab="tamu">Tamu</button></div>
+ <p id="admMsg" class="msg"></p>
+ <div id="editor"></div>
  <h3 style="font-size:17px">Generator link tamu</h3>
  <p style="font-size:13px">Satu nama per baris. Tiap link siap dikirim lewat WhatsApp.</p>
  <textarea id="names" placeholder="Budi Santoso&#10;Siti Aminah"></textarea>
@@ -164,6 +257,7 @@ footer small{opacity:.7;display:block;margin-top:18px}
 <div id="cover">
  <div>
   <small>Undangan Pernikahan</small>
+  <div class="stage"><div class="tilt" id="tilt"><div class="c3" id="c3"></div></div></div>
   <h1>Wencen<i>&</i>Apriliana</h1>
   <small id="coverDate"></small><br>
   <div class="tamu"><small>Kepada Yth. Bapak/Ibu/Saudara/i</small><b id="guest">Tamu Undangan</b></div><br>
@@ -240,7 +334,7 @@ footer small{opacity:.7;display:block;margin-top:18px}
  <p class="sub" id="kado"></p>
 </section>
 
-<div class="band"><section id="info" class="in rv">
+<div class="band nb"><section id="info" class="in rv">
  <h2>Info Tambahan</h2>
  <div class="grid g2" style="text-align:left">
   <div class="card"><h3>Protokol acara</h3><p class="sub" id="prot"></p></div>
@@ -265,8 +359,8 @@ footer small{opacity:.7;display:block;margin-top:18px}
 <script>
 /* ===== CONFIG: ubah data di sini ===== */
 const C={
- groom:{full:"Wencen Cius Roni Anggara",par:"Bapak Mus & Ibu Muntiah",addr:"Ngronggot, Nganjuk",ig:""},
- bride:{full:"Apriliana Rizki Ananda",par:"Bapak Arjuna & Ibu Utami",addr:"Pare, Kediri",ig:""},
+ groom:{full:"Wencen Cius Roni Anggara",par:"Bapak Mus & Ibu Muntiah",addr:"Ngronggot, Nganjuk",ig:"",photo:""},
+ bride:{full:"Apriliana Rizki Ananda",par:"Bapak Arjuna & Ibu Utami",addr:"Pare, Kediri",ig:"",photo:""},
  events:[
   {t:"Akad Nikah",start:"2026-12-20T08:00:00+07:00",end:"2026-12-20T10:00:00+07:00",place:"Kediaman Mempelai Wanita",addr:"Pare, Kediri"},
   {t:"Resepsi",start:"2026-12-20T11:00:00+07:00",end:"2026-12-20T14:00:00+07:00",place:"Kediaman Mempelai Wanita",addr:"Pare, Kediri"}
@@ -283,7 +377,9 @@ const C={
  ],
  photos:[],            /* isi URL foto, mis. ["foto1.jpg","foto2.jpg",...] */
  video:"",             /* ID video YouTube, mis. "dQw4w9WgXcQ" */
+ coverPhoto:"https://id.pngtree.com/freepng/muslim-wedding-couple-romance-and-love-just-married-romantic-cartoon_16481710.html",        /* URL foto berdua untuk sampul 3D (kosong = dua lingkaran W & A) */
  music:"",             /* URL file mp3 */
+ musicYT:"https://www.youtube.com/watch?v=DKC4vtUAlaA&list=RDo1gSJKCmJH8&index=2",           /* link YouTube / YouTube Music, mis. "https://music.youtube.com/watch?v=XXXXXXXXXXX" */
  sheetUrl:"https://script.google.com/macros/s/AKfycbzuHYq_mr3OtQRgG9on5cry6UAVqjDeZXz88VPjgMsuIRDQtL1AbbAUxG2FZYZKNBy6/exec",          /* URL Web App Apps Script */
  adminKey:"Roni",
  wa:"6281234567890",
@@ -302,6 +398,7 @@ const full={weekday:"long",day:"numeric",month:"long",year:"numeric"};
 const tm=d=>new Date(d).toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}).replace(".",":");
 const clean=t=>C.bad.reduce((a,w)=>a.replace(new RegExp(w,"gi"),"***"),t);
 const q=new URLSearchParams(location.search);
+const nk=s=>String(s).toLowerCase(),isAdmin=q.get("admin")===C.adminKey;
 
 /* ===== isi konten ===== */
 const guest=(q.get("to")||"Tamu Undangan").replace(/[-_+]/g," ");
@@ -309,8 +406,12 @@ $("#guest").textContent=guest;$("#rn").value=q.get("to")?guest:"";$("#wn").value
 if(q.get("to")){["#rn","#wn"].forEach(i=>{$(i).readOnly=true;$(i).title="Nama sesuai undangan dan tidak dapat diubah"})}
 if(C.sheetUrl&&(!q.get("to")||!q.get("k"))){$$("#fRsvp button,#fWish button").forEach(b=>b.disabled=true);["#rm","#wmsg"].forEach(i=>{$(i).className="msg er";$(i).textContent="Gunakan link undangan pribadi dari panitia untuk mengisi form ini."})}
 $("#coverDate").textContent=fmt(C.events[0].start,full);
+(()=>{const g=C.groom,b=C.bride,u=p=>p?`background-image:url('${esc(p)}')`:"";
+ $("#c3").innerHTML=C.coverPhoto?`<div class="ring r2"></div><div class="ring r1"></div><div class="ph main" style="${u(C.coverPhoto)}"></div>`
+ :`<div class="ring r2"></div><div class="ph a" style="${u(g.photo)}">${g.photo?"":"W"}</div><div class="ph b" style="${u(b.photo)}">${b.photo?"":"A"}</div>`;
+ $("#cover").onpointermove=e=>{const t=$("#tilt");t.style.setProperty("--ry",(e.clientX/innerWidth-.5)*30+"deg");t.style.setProperty("--rx",-(e.clientY/innerHeight-.5)*30+"deg")}})();
 [["g",C.groom],["b",C.bride]].forEach(([k,p])=>{
- $("#"+k+"Name").textContent=p.full;$("#"+k+"Par").textContent=p.par;$("#"+k+"Addr").textContent=p.addr;
+ $("#"+k+"Name").textContent=p.full;if(p.photo){const f=$("#f"+k);f.style.backgroundImage=`url('${p.photo}')`;f.textContent=""}$("#"+k+"Par").textContent=p.par;$("#"+k+"Addr").textContent=p.addr;
  if(p.ig){const a=$("#"+k+"Ig");a.href="https://instagram.com/"+p.ig.replace("@","");a.hidden=false}
 });
 $("#story").innerHTML=C.story.map(s=>`<div><h3>${esc(s[0])}</h3><p class="sub" style="margin:0">${esc(s[1])}</p></div>`).join("");
@@ -324,7 +425,7 @@ $("#locName").textContent=C.events[0].place+", "+C.events[0].addr;
 $("#map").src="https://maps.google.com/maps?q="+encodeURIComponent(C.mapQuery)+"&output=embed";
 $("#mapBtn").href="https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(C.mapQuery);
 $("#parkir").textContent=C.parkir;
-$("#gal").innerHTML=Array.from({length:6},(_,i)=>{const u=C.photos[i];return `<button type="button" aria-label="Foto ${i+1}" data-u="${u?esc(u):""}" style="${u?`background-image:url('${esc(u)}')`:""}">${u?"":"♡"}</button>`}).join("");
+$("#gal").innerHTML=Array.from({length:12},(_,i)=>{const u=C.photos[i];return `<button type="button" aria-label="Foto ${i+1}" data-u="${u?esc(u):""}" style="${u?`background-image:url('${esc(u)}')`:""}">${u?"":"♡"}</button>`}).join("");
 if(C.video){$("#vid").src="https://www.youtube.com/embed/"+C.video;$("#vid").hidden=false}
 $("#dl").textContent=fmt(C.rsvpDeadline,{day:"numeric",month:"long",year:"numeric"});
 $("#banks").innerHTML=C.banks.map(b=>`<div class="card bank"><div style="text-align:left"><small>${esc(b.n)}</small><br><b>${esc(b.no)}</b><br><small>a.n. ${esc(b.an)}</small></div><button class="btn sm" type="button" data-copy="${esc(b.no)}">Salin</button></div>`).join("");
@@ -335,10 +436,18 @@ $("#fam").textContent="Keluarga "+C.groom.par.replace("Bapak ","").replace("Ibu 
 $("#fam").textContent="Keluarga "+C.groom.par+" · Keluarga "+C.bride.par;
 
 /* ===== buka undangan + musik ===== */
-const aud=$("#aud");if(C.music)aud.src=C.music;else $("#mus").hidden=true;
-$("#openBtn").onclick=()=>{$("#cover").classList.add("out");document.body.classList.remove("lock");document.body.classList.add("open");
- if(C.music)aud.play().then(()=>$("#mus").classList.add("spin")).catch(()=>{});scrollTo(0,0)};
-$("#mus").onclick=()=>{if(aud.paused){aud.play();$("#mus").classList.add("spin")}else{aud.pause();$("#mus").classList.remove("spin")}};
+const aud=$("#aud");if(C.music)aud.src=C.music;
+const ytId=(u=>{try{const x=new URL(u);return x.hostname.includes("youtu.be")?x.pathname.slice(1):x.searchParams.get("v")||""}catch{return""}})(C.musicYT);
+if(!C.music&&!ytId)$("#mus").hidden=true;
+let yt=null;
+const ytCmd=f=>yt&&yt.contentWindow.postMessage(JSON.stringify({event:"command",func:f,args:""}),"*");
+const playMusic=()=>{
+ if(ytId){if(yt)ytCmd("playVideo");else{yt=document.createElement("iframe");yt.title="Musik latar";yt.allow="autoplay; encrypted-media";yt.style.cssText="position:fixed;left:-300px;bottom:0;width:200px;height:200px;border:0;pointer-events:none";yt.src="https://www.youtube.com/embed/"+ytId+"?autoplay=1&loop=1&playlist="+ytId+"&controls=0&enablejsapi=1&playsinline=1";document.body.appendChild(yt)}}
+ else if(C.music)aud.play().catch(()=>{});
+ $("#mus").classList.add("spin");$("#mus").dataset.on=1};
+const pauseMusic=()=>{ytId?ytCmd("pauseVideo"):aud.pause();$("#mus").classList.remove("spin");$("#mus").dataset.on=""};
+$("#openBtn").onclick=()=>{$("#cover").classList.add("out");document.body.classList.remove("lock");document.body.classList.add("open");playMusic();scrollTo(0,0);setTimeout(startRv,350)};
+$("#mus").onclick=()=>$("#mus").dataset.on?pauseMusic():playMusic();
 $("#thm").onclick=()=>{const r=document.documentElement,d=r.dataset.theme==="dark";r.dataset.theme=d?"light":"dark";$("#thm").textContent=d?"☀":"☾"};
 
 /* ===== countdown ===== */
@@ -348,7 +457,13 @@ const target=new Date(C.events[0].start);
 
 /* ===== scroll reveal, lightbox, salin ===== */
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("on");io.unobserve(e.target)}}),{threshold:.12});
-$$(".rv").forEach(el=>io.observe(el));
+const startRv=()=>$$(".rv").forEach(el=>{
+ [...el.children].forEach((c,i)=>c.style.transitionDelay=i*.12+"s");
+ el.querySelectorAll(".g2>*").forEach((c,i)=>c.style.transitionDelay=.3+i*.18+"s");
+ el.querySelectorAll(".tl>div").forEach((c,i)=>c.style.transitionDelay=.3+i*.18+"s");
+ el.querySelectorAll(".cd div").forEach((c,i)=>c.style.transitionDelay=.4+i*.1+"s");
+ el.querySelectorAll(".gal button").forEach((c,i)=>c.style.transitionDelay=.2+i*.07+"s");
+ io.observe(el)});
 $("#gal").onclick=e=>{const b=e.target.closest("button");if(!b)return;const l=$("#lbi");
  l.style.backgroundImage=b.dataset.u?`url('${b.dataset.u}')`:"";l.style.background=b.dataset.u?"":getComputedStyle(b).backgroundColor;
  if(b.dataset.u){l.style.background="";l.style.backgroundImage=`url('${b.dataset.u}')`;l.style.backgroundSize="cover"}
@@ -373,7 +488,7 @@ async function post(d){
 }
 async function load(){
  if(!C.sheetUrl)return{rsvp:local("rsvp"),wishes:local("wishes")};
- const r=await fetch(C.sheetUrl);return r.json();
+ const r=await fetch(C.sheetUrl+(isAdmin?"?admin="+encodeURIComponent(C.adminKey):""));return r.json();
 }
 const closed=Date.now()>new Date(C.rsvpDeadline);
 if(closed){$("#fRsvp button").disabled=true;$("#rm").textContent="Konfirmasi kehadiran sudah ditutup.";$("#rm").className="msg er"}
@@ -387,7 +502,7 @@ $("#fWish").onsubmit=async e=>{e.preventDefault();const m=$("#wmsg");m.className
  catch(err){m.className="msg er";m.textContent=err.message==="invalid"?"Kode link tidak cocok. Gunakan link asli dari panitia.":"Gagal mengirim. Periksa koneksi lalu coba lagi."}};
 function prefill(d){
  if(window._pf||!guestKey)return;window._pf=1;
- const r=(d.rsvp||[]).find(x=>String(x[5])===guestKey),w=(d.wishes||[]).find(x=>String(x[5])===guestKey);
+ const r=(d.rsvp||[]).find(x=>nk(x[5])===nk(guestKey)),w=(d.wishes||[]).find(x=>nk(x[5])===nk(guestKey));
  if(r){$("#rs").value=r[2];$("#rc").value=r[3]||1}
  if(w)$("#wm").value=w[4];
 }
@@ -400,25 +515,47 @@ async function refresh(){
 refresh();setInterval(refresh,30000);
 
 /* ===== admin ===== */
-const isAdmin=q.get("admin")===C.adminKey;
 if(isAdmin)$("#adm").classList.add("on");
 function adminRender(d){if(!isAdmin)return;const r=d.rsvp||[];
  const sum=s=>r.filter(x=>x[2]===s).reduce((a,x)=>a+(+x[3]||1),0);
  $("#stat").innerHTML=`Respons: <b>${r.length}</b> · Hadir: <b>${sum("Hadir")}</b> orang · Tidak hadir: <b>${r.filter(x=>x[2]==="Tidak hadir").length}</b> · Ragu: <b>${r.filter(x=>x[2]==="Masih ragu").length}</b> · Ucapan: <b>${(d.wishes||[]).length}</b>`;
- $("#rsvpList").innerHTML=r.map(x=>`${esc(x[1])} — ${esc(x[2])} (${esc(x[3])})`).join("<br>")}
+ if(!window._adm){admEditor(d);window._adm=1}}
+let admTab="rsvp";
+function admEditor(d){
+ const box=$("#editor"),kc=admTab==="tamu"?2:5,base=location.origin+location.pathname;
+ if(!C.sheetUrl){box.innerHTML="<p>Isi sheetUrl di CONFIG agar database bisa diedit.</p>";return}
+ const T={rsvp:d.rsvp,wish:d.wishes,tamu:d.tamu}[admTab]||[];
+ box.innerHTML=T.length?T.map(r=>{
+  const key=String(r[kc]||""),dis=key?"":" disabled";let f="",info="Link: "+esc(key||"(tanpa kunci link, edit langsung di Sheet)");
+  if(admTab==="rsvp")f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><select data-f="status">${["Hadir","Tidak hadir","Masih ragu"].map(o=>`<option${o===r[2]?" selected":""}>${o}</option>`).join("")}</select><input data-f="count" type="number" min="1" max="10" value="${esc(r[3]||1)}" aria-label="Jumlah">`;
+  else if(admTab==="wish")f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><textarea data-f="msg" aria-label="Ucapan">${esc(r[4])}</textarea>`;
+  else{f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><input data-f="code" value="${esc(r[3])}" maxlength="12" aria-label="Kode">`;const u=base+"?to="+encodeURIComponent(key)+"&k="+encodeURIComponent(r[3]);info=`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`}
+  return `<div class="er-row" data-key="${esc(key)}"><small>${info}</small>${f}<span><button class="btn sm" data-a="save" type="button"${dis}>Simpan</button> <button class="btn out sm" data-a="del" type="button"${dis}>Hapus</button></span></div>`}).join(""):"<p>Belum ada data.</p>";
+}
+$$("[data-tab]").forEach(b=>b.onclick=()=>{admTab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.className="btn sm"+(x===b?"":" out"));if(window._d)admEditor(window._d)});
+$("#editor").onclick=async e=>{
+ const b=e.target.closest("[data-a]");if(!b)return;
+ const row=b.closest(".er-row"),act=b.dataset.a,m=$("#admMsg");
+ if(act==="del"&&!confirm("Hapus data ini?"))return;
+ const p={type:"admin",adminKey:C.adminKey,sheet:admTab,action:act==="del"?"delete":"update",key:row.dataset.key};
+ row.querySelectorAll("[data-f]").forEach(i=>p[i.dataset.f]=i.value.trim());
+ m.className="msg";m.textContent="Menyimpan…";
+ try{const t=await post(p);if(t==="notfound"){m.className="msg er";m.textContent="Data tidak ditemukan. Muat ulang halaman.";return}
+  await new Promise(r=>setTimeout(r,900));window._adm=0;await refresh();m.className="msg ok";m.textContent=act==="del"?"Data dihapus.":"Perubahan disimpan."}
+ catch(err){m.className="msg er";m.textContent=err.message==="forbidden"?"Kunci admin tidak cocok dengan ADMIN di Apps Script.":"Gagal menyimpan. Periksa koneksi."}};
 const rand=()=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return[...crypto.getRandomValues(new Uint8Array(8))].map(x=>a[x%a.length]).join("")};
-async function tamuMap(){const r=await fetch(C.sheetUrl+"?admin="+encodeURIComponent(C.adminKey));const d=await r.json();if(!d.tamu)throw new Error("noadmin");const m={};d.tamu.forEach(x=>m[x[2]]=String(x[3]));return m}
+async function tamuMap(){const r=await fetch(C.sheetUrl+"?admin="+encodeURIComponent(C.adminKey));const d=await r.json();if(!d.tamu)throw new Error("noadmin");const m={};d.tamu.forEach(x=>m[nk(x[2])]={key:String(x[2]),code:String(x[3])});return m}
 $("#gen").onclick=async()=>{
  const base=location.origin+location.pathname,box=$("#links");
  const names=$("#names").value.split("\n").map(n=>n.trim()).filter(Boolean);
  if(!names.length)return;box.textContent="Membuat link…";
  let known={};
  if(C.sheetUrl){try{known=await tamuMap()}catch{box.innerHTML='<b style="color:#c00">Gagal membaca data tamu. Periksa sheetUrl, tab "Tamu", dan ADMIN di Apps Script, lalu deploy versi baru.</b>';return}}
- const seen=new Set(),codes={};
- const items=names.map(n=>{const to=n.replace(/\s+/g,"-");const dup=!!known[to]||seen.has(to);
-  const code=known[to]||codes[to]||(codes[to]=rand());const isNew=!dup;seen.add(to);return{n,to,code,isNew,dup}});
+ const seen=new Set(),codes={},keys={};
+ const items=names.map(n=>{const raw=n.replace(/\s+/g,"-"),id=nk(raw),k=known[id];const dup=!!k||seen.has(id);
+  keys[id]=keys[id]||raw;const to=k?k.key:keys[id];const code=k?k.code:(codes[id]||(codes[id]=rand()));seen.add(id);return{n,to,id,code,isNew:!dup,dup}});
  if(C.sheetUrl){for(const it of items.filter(x=>x.isNew)){try{await post({type:"guest",adminKey:C.adminKey,name:it.n,key:it.to,code:it.code})}catch{}}
-  try{const chk=await tamuMap();items.forEach(it=>it.ok=chk[it.to]===it.code)}catch{}}
+  try{const chk=await tamuMap();items.forEach(it=>it.ok=!!chk[it.id]&&chk[it.id].code===it.code)}catch{}}
  box.innerHTML=items.map(it=>{
   const u=base+"?to="+encodeURIComponent(it.to)+"&k="+it.code;
   const t=`Assalamu'alaikum ${it.n}, kami mengundang Anda ke pernikahan Wencen & Apriliana. Buka undangan: ${u}`;
