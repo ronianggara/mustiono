@@ -93,7 +93,7 @@ section h2{font-size:clamp(28px,6vw,40px);margin-bottom:8px;color:var(--lagoon)}
 /* cover */
 #cover{position:fixed;inset:0;z-index:50;display:flex;overflow-x:hidden;overflow-y:auto;text-align:center;padding:24px;color:#fff;background:linear-gradient(170deg,#0A0A0A 0%,#1C1C1C 55%,#3B3B3B 100%);transition:transform .9s cubic-bezier(.7,0,.2,1)}
 #cover.out{transform:translateY(-101%)}
-#cover::before{content:"";position:absolute;width:clamp(130px,32vw,260px);aspect-ratio:1;border-radius:50%;background:var(--sun);top:6%;right:5%;opacity:.22}
+#cover::before{content:"";position:absolute;--d:min(260px,60vw);width:var(--d);aspect-ratio:1;border-radius:50%;background:var(--sun);top:9%;right:calc(var(--d)/-4);opacity:.2}
 #cover::after{content:"";position:absolute;left:0;right:0;bottom:0;height:150px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 150' preserveAspectRatio='none'%3E%3Cpath d='M0 70c150-60 300 60 450 0s300 60 450 0 200-30 300 10v70H0z' fill='%23FBF6E9' fill-opacity='.35'/%3E%3Cpath d='M0 100c150-50 300 50 450 0s300 50 450 0 200-20 300 10v40H0z' fill='%23FBF6E9'/%3E%3C/svg%3E") bottom/100% 100% no-repeat}
 #cover>div{position:relative;z-index:1;margin:auto}
 #cover small{opacity:.9}
@@ -183,18 +183,6 @@ body.open .fab{display:block}
 .band>.in{padding-top:clamp(80px,12vw,130px);padding-bottom:clamp(80px,12vw,130px)}
 footer{position:relative}
 footer::before{top:-59px;background:var(--deep);transform:scaleY(-1)}
-/* cover 3D */
-.stage{perspective:900px;width:clamp(140px,26vh,230px);height:clamp(140px,26vh,230px);margin:20px auto 14px}
-.tilt{width:100%;height:100%;transform-style:preserve-3d;transition:transform .25s;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
-.c3{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:fl 8s ease-in-out infinite}
-@keyframes fl{0%,100%{transform:rotateY(-24deg) rotateX(6deg)}50%{transform:rotateY(24deg) rotateX(-6deg)}}
-.ph{position:absolute;border-radius:50%;background:#fff center/cover;display:grid;place-items:center;font:700 54px 'Cormorant Garamond',serif;color:var(--deep);border:4px solid var(--sun);box-shadow:0 16px 30px rgba(0,0,0,.45)}
-.ph.main{inset:8%;transform:translateZ(60px)}
-.ph.a{width:62%;height:62%;left:0;top:10%;transform:translateZ(70px);background-image:linear-gradient(140deg,var(--lagoon),var(--aqua));color:#fff}
-.ph.b{width:62%;height:62%;right:0;top:28%;transform:translateZ(20px);background-image:linear-gradient(140deg,var(--coral),var(--sun))}
-.ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--sun)}
-.ring.r2{transform:translateZ(-50px) scale(1.3);border-color:rgba(255,255,255,.45)}
-.ring.r1{transform:translateZ(0) scale(1.1)}
 .fab[hidden]{display:none!important}
 :root{--mw:760px}
 html{font-size:clamp(15px,.35vw + 14px,18px);-webkit-text-size-adjust:100%}
@@ -202,7 +190,7 @@ img,iframe{max-width:100%}
 .fab{right:max(14px,env(safe-area-inset-right))}
 #mus{bottom:calc(16px + env(safe-area-inset-bottom))}#thm{bottom:calc(70px + env(safe-area-inset-bottom))}
 .ws{max-height:min(380px,60vh)}
-#cover h1{font-size:clamp(36px,min(11vw,9vh),84px)}
+#cover h1{font-size:clamp(44px,min(13vw,11vh),86px)}
 @media(min-width:1024px){:root{--mw:960px}}
 @media(min-width:1440px){:root{--mw:1100px}}
 @media(min-width:900px){
@@ -219,10 +207,9 @@ img,iframe{max-width:100%}
  .gal button:nth-child(10){grid-area:3/5}
  .gal button:nth-child(11){grid-area:3/6/span 2}
  .gal button:nth-child(12){grid-area:4/5}
- .stage{width:clamp(160px,28vh,280px);height:clamp(160px,28vh,280px)}
 }
 @media(max-width:380px){.cd{gap:6px}.cd div{min-width:58px}.foto{width:140px;height:140px}.btn{padding:11px 20px}}
-@media(max-height:560px){#cover{padding:14px}.stage{width:100px;height:100px;margin:8px auto}.tamu{margin:8px auto;padding:8px 14px}#cover::before{display:none}#cover::after{height:70px}#cover h1{font-size:34px}}
+@media(max-height:560px){#cover{padding:14px}.tamu{margin:8px auto;padding:8px 14px}#cover::before{display:none}#cover::after{height:70px}#cover h1{font-size:34px}}
 #adm input,#adm select,#adm textarea{border-color:#bbb;color:#333;background:#fff;padding:8px;font-size:14px}
 #editor{max-height:460px;overflow:auto}
 .er-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:center;padding:12px;border:1px solid #e0d6b5;border-radius:12px;margin:8px 0;background:#fff}
@@ -244,10 +231,8 @@ footer small{opacity:.7;display:block;margin-top:18px}
 <div id="adm">
  <h3>Dashboard Admin</h3>
  <p id="stat">Memuat data…</p>
- <h3 style="font-size:17px;margin-top:14px">Edit database</h3>
- <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" type="button" data-tab="rsvp">RSVP</button><button class="btn out sm" type="button" data-tab="wish">Ucapan</button><button class="btn out sm" type="button" data-tab="tamu">Tamu</button></div>
- <input id="admSearch" type="search" placeholder="Cari nama, link, status, atau ucapan…" aria-label="Cari data" style="margin-bottom:4px"><small id="admCount"></small>
- <p id="admMsg" class="msg"></p>
+ <h3 style="font-size:17px;margin-top:14px">Link undangan tamu</h3>
+ <input id="admSearch" type="search" placeholder="Cari nama atau link…" aria-label="Cari link tamu" style="margin-bottom:4px"><small id="admCount"></small>
  <div id="editor"></div>
  <h3 style="font-size:17px">Generator link tamu</h3>
  <p style="font-size:13px">Satu nama per baris. Tiap link siap dikirim lewat WhatsApp.</p>
@@ -259,7 +244,6 @@ footer small{opacity:.7;display:block;margin-top:18px}
 <div id="cover">
  <div>
   <small>Undangan Pernikahan</small>
-  <div class="stage"><div class="tilt" id="tilt"><div class="c3" id="c3"></div></div></div>
   <h1>Wencen<i>&</i>Apriliana</h1>
   <small id="coverDate"></small><br>
   <div class="tamu"><small>Kepada Yth. Bapak/Ibu/Saudara/i</small><b id="guest">Tamu Undangan</b></div><br>
@@ -377,9 +361,8 @@ const C={
   ["Lamaran","Ceritakan momen lamaran di sini."],
   ["Menuju Pernikahan","Dua keluarga bersatu, kami siap melangkah bersama."]
  ],
- photos:["pngtree-couple-anime-a-man-giving-an-engagement-box-diamond-ring-marriage-png-image_13759674.png"],            /* isi URL foto, mis. ["foto1.jpg","foto2.jpg",...] */
+ photos:[pngtree-couple-anime-a-man-giving-an-engagement-box-diamond-ring-marriage-png-image_13759674.png],            /* isi URL foto, mis. ["foto1.jpg","foto2.jpg",...] */
  video:"",             /* ID video YouTube, mis. "dQw4w9WgXcQ" */
- coverPhoto:"https://png.pngtree.com/png-vector/20240906/ourmid/pngtree-couple-anime-a-man-giving-an-engagement-box-diamond-ring-marriage-png-image_13759674.png",        /* URL foto berdua untuk sampul 3D (kosong = dua lingkaran W & A) */
  music:"",             /* URL file mp3 */
  musicYT:"",           /* link YouTube / YouTube Music, mis. "https://music.youtube.com/watch?v=XXXXXXXXXXX" */
  sheetUrl:"https://script.google.com/macros/s/AKfycbzuHYq_mr3OtQRgG9on5cry6UAVqjDeZXz88VPjgMsuIRDQtL1AbbAUxG2FZYZKNBy6/exec",          /* URL Web App Apps Script */
@@ -408,10 +391,6 @@ $("#guest").textContent=guest;$("#rn").value=q.get("to")?guest:"";$("#wn").value
 if(q.get("to")){["#rn","#wn"].forEach(i=>{$(i).readOnly=true;$(i).title="Nama sesuai undangan dan tidak dapat diubah"})}
 if(C.sheetUrl&&(!q.get("to")||!q.get("k"))){$$("#fRsvp button,#fWish button").forEach(b=>b.disabled=true);["#rm","#wmsg"].forEach(i=>{$(i).className="msg er";$(i).textContent="Gunakan link undangan pribadi dari panitia untuk mengisi form ini."})}
 $("#coverDate").textContent=fmt(C.events[0].start,full);
-(()=>{const g=C.groom,b=C.bride,u=p=>p?`background-image:url('${esc(p)}')`:"";
- $("#c3").innerHTML=C.coverPhoto?`<div class="ring r2"></div><div class="ring r1"></div><div class="ph main" style="${u(C.coverPhoto)}"></div>`
- :`<div class="ring r2"></div><div class="ph a" style="${u(g.photo)}">${g.photo?"":"W"}</div><div class="ph b" style="${u(b.photo)}">${b.photo?"":"A"}</div>`;
- $("#cover").onpointermove=e=>{const t=$("#tilt");t.style.setProperty("--ry",(e.clientX/innerWidth-.5)*30+"deg");t.style.setProperty("--rx",-(e.clientY/innerHeight-.5)*30+"deg")}})();
 [["g",C.groom],["b",C.bride]].forEach(([k,p])=>{
  $("#"+k+"Name").textContent=p.full;if(p.photo){const f=$("#f"+k);f.style.backgroundImage=`url('${p.photo}')`;f.textContent=""}$("#"+k+"Par").textContent=p.par;$("#"+k+"Addr").textContent=p.addr;
  if(p.ig){const a=$("#"+k+"Ig");a.href="https://instagram.com/"+p.ig.replace("@","");a.hidden=false}
@@ -522,34 +501,19 @@ function adminRender(d){if(!isAdmin)return;const r=d.rsvp||[];
  const sum=s=>r.filter(x=>x[2]===s).reduce((a,x)=>a+(+x[3]||1),0);
  $("#stat").innerHTML=`Respons: <b>${r.length}</b> · Hadir: <b>${sum("Hadir")}</b> orang · Tidak hadir: <b>${r.filter(x=>x[2]==="Tidak hadir").length}</b> · Ragu: <b>${r.filter(x=>x[2]==="Masih ragu").length}</b> · Ucapan: <b>${(d.wishes||[]).length}</b>`;
  if(!window._adm){admEditor(d);window._adm=1}}
-let admTab="rsvp";
 function admEditor(d){
- const box=$("#editor"),kc=admTab==="tamu"?2:5,base=location.origin+location.pathname;
- if(!C.sheetUrl){box.innerHTML="<p>Isi sheetUrl di CONFIG agar database bisa diedit.</p>";return}
- const T={rsvp:d.rsvp,wish:d.wishes,tamu:d.tamu}[admTab]||[],cm={};(d.tamu||[]).forEach(x=>cm[nk(x[2])]=String(x[3]));
+ const box=$("#editor"),base=location.origin+location.pathname;
+ if(!C.sheetUrl){box.innerHTML="<p>Isi sheetUrl di CONFIG agar daftar link muncul.</p>";return}
+ const T=d.tamu||[];
  box.innerHTML=T.length?T.map(r=>{
-  const key=String(r[kc]||""),dis=key?"":" disabled";let f="";const code=cm[nk(key)],u=key&&code?base+"?to="+encodeURIComponent(key)+"&k="+encodeURIComponent(code):"",info=u?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:"(link tidak ditemukan, edit langsung di Sheet)";
-  if(admTab==="rsvp")f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><select data-f="status">${["Hadir","Tidak hadir","Masih ragu"].map(o=>`<option${o===r[2]?" selected":""}>${o}</option>`).join("")}</select><input data-f="count" type="number" min="1" max="10" value="${esc(r[3]||1)}" aria-label="Jumlah">`;
-  else if(admTab==="wish")f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><textarea data-f="msg" aria-label="Ucapan">${esc(r[4])}</textarea>`;
-  else{f=`<input data-f="name" value="${esc(r[1])}" aria-label="Nama"><input data-f="code" value="${esc(r[3])}" maxlength="12" aria-label="Kode">`}
-  return `<div class="er-row" data-key="${esc(key)}" data-s="${esc([r[1],admTab==="tamu"?"":r[2],admTab==="wish"?r[4]:"",key,u].join(" ").toLowerCase())}"><small>${info}</small>${f}<span><button class="btn sm" data-a="save" type="button"${dis}>Simpan</button> <button class="btn out sm" data-a="del" type="button"${dis}>Hapus</button></span></div>`}).join(""):"<p>Belum ada data.</p>";
+  const u=base+"?to="+encodeURIComponent(r[2])+"&k="+encodeURIComponent(r[3]);
+  return `<div class="er-row" data-s="${esc((r[1]+" "+r[2]+" "+u).toLowerCase())}"><small style="font-size:14px"><a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></small></div>`}).join(""):"<p>Belum ada link. Buat lewat generator di bawah.</p>";
  applyFilter();
 }
 function applyFilter(){const k=nk($("#admSearch").value.trim());let n=0,t=0;
  $$("#editor .er-row").forEach(r=>{t++;const m=!k||r.dataset.s.includes(k);r.hidden=!m;if(m)n++});
- $("#admCount").textContent=k?`Menampilkan ${n} dari ${t} data`:""}
+ $("#admCount").textContent=k?`Menampilkan ${n} dari ${t} link`:""}
 $("#admSearch").oninput=applyFilter;
-$$("[data-tab]").forEach(b=>b.onclick=()=>{admTab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.className="btn sm"+(x===b?"":" out"));if(window._d)admEditor(window._d)});
-$("#editor").onclick=async e=>{
- const b=e.target.closest("[data-a]");if(!b)return;
- const row=b.closest(".er-row"),act=b.dataset.a,m=$("#admMsg");
- if(act==="del"&&!confirm("Hapus data ini?"))return;
- const p={type:"admin",adminKey:C.adminKey,sheet:admTab,action:act==="del"?"delete":"update",key:row.dataset.key};
- row.querySelectorAll("[data-f]").forEach(i=>p[i.dataset.f]=i.value.trim());
- m.className="msg";m.textContent="Menyimpan…";
- try{const t=await post(p);if(t==="notfound"){m.className="msg er";m.textContent="Data tidak ditemukan. Muat ulang halaman.";return}
-  await new Promise(r=>setTimeout(r,900));window._adm=0;await refresh();m.className="msg ok";m.textContent=act==="del"?"Data dihapus.":"Perubahan disimpan."}
- catch(err){m.className="msg er";m.textContent=err.message==="forbidden"?"Kunci admin tidak cocok dengan ADMIN di Apps Script.":"Gagal menyimpan. Periksa koneksi."}};
 const rand=()=>{const a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";return[...crypto.getRandomValues(new Uint8Array(8))].map(x=>a[x%a.length]).join("")};
 async function tamuMap(){const r=await fetch(C.sheetUrl+"?admin="+encodeURIComponent(C.adminKey));const d=await r.json();if(!d.tamu)throw new Error("noadmin");const m={};d.tamu.forEach(x=>m[nk(x[2])]={key:String(x[2]),code:String(x[3])});return m}
 $("#gen").onclick=async()=>{
@@ -566,7 +530,7 @@ $("#gen").onclick=async()=>{
  box.innerHTML=items.map(it=>{
   const u=base+"?to="+encodeURIComponent(it.to)+"&k="+it.code;
   const t=`Assalamu'alaikum ${it.n}, kami mengundang Anda ke pernikahan Wencen & Apriliana. Buka undangan: ${u}`;
-  return `<p style="margin:8px 0"><b>${esc(it.n)}</b> ${C.sheetUrl?(it.ok?"✓ tersimpan":"⚠ belum tersimpan di Sheet, coba lagi"):""}${it.dup?'<br><b style="color:#c00">⚠ Nama sudah digunakan</b>':""}<br><a href="${esc(u)}">${esc(u)}</a><br><a href="https://wa.me/?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">Kirim via WhatsApp</a></p>`}).join("")};
+  return `<p style="margin:8px 0"><b>${esc(it.n)}</b> ${C.sheetUrl?(it.ok?"✓ tersimpan":"⚠ belum tersimpan di Sheet, coba lagi"):""}${it.dup?'<br><b style="color:#c00">⚠ Nama sudah digunakan</b>':""}<br><a href="${esc(u)}">${esc(u)}</a><br><a href="https://wa.me/?text=${encodeURIComponent(t)}" target="_blank" rel="noopener">Kirim via WhatsApp</a></p>`}).join("");window._adm=0;refresh()};
 </script>
 </body>
 </html>
